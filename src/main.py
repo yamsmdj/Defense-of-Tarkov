@@ -1,59 +1,62 @@
 import pygame
-import sys
-
-class Grille:
-    def __init__(self, screen, rows, cols, hauteur):
-        self.screen = screen
-        self.rows = rows
-        self.cols = cols
-        self.hauteur = hauteur
-        self.width, self.height = self.screen.get_size()
-        self.cell_width = self.width // self.cols
-        self.cell_height = (self.height - self.hauteur) // self.rows
-
-    def draw(self):
-        for row in range(self.rows):
-            for col in range(self.cols):
-                rect = pygame.Rect(col * self.cell_width, self.hauteur + row * self.cell_height, self.cell_width, self.cell_height)
-                pygame.draw.rect(self.screen, (255, 255, 255), rect, 1)
+from game import Game
+pygame.init()
 
 
-class Game:
-     
-    def __init__(self):
-        self.screen = pygame.display.set_mode((1280, 960))
-        pygame.display.set_caption("Defense of Tarkov")
-        self.background = pygame.image.load('assets/images/bg-tarkov.jpg')
-        self.running = True 
-        self.hauteur = 100
-        self.grille = Grille(self.screen, 4, 7, self.hauteur)
+#Generer la fenetre du jeu
+screen = pygame.display.set_mode((1280, 960))
+#Titre fenetre
+pygame.display.set_caption("Defense of Tarkov")
+#background (etape 1)
+background = pygame.image.load('../assets/bg.jpg')
 
-    def main_function(self):
-        while self.running:
-            self.screen.blit(self.background, (0, 0))
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                    pygame.quit()
-                    sys.exit()
+#Charger le joueur de la classe Player
+#player = Player()
+#Charger le jeux 
+game = Game()
+
+
+running = True
+#Boucle du jeu
+while running:
+
+    #appliquer le background
+    screen.blit(background, (0, 0))
+
+    #appliquer l'image du joueur 
+    screen.blit(game.player.image, game.player.rect)
+
+    #recuperer les projectiles du joueur
+    for projectile in game.player.all_projectiles:
+        projectile.move()
+    
+    #appliquer image du projectile
+    game.player.all_projectiles.draw(screen)
+
+    # Joueur -> gauche/droite
+    if game.pressed.get(pygame.K_RIGHT) and game.player.rect.x + game.player.rect.width < screen.get_width() :
+        game.player.move_right()
+    elif game.pressed.get(pygame.K_LEFT) and game.player.rect.x > 0:
+        game.player.move_left()
+
+    # Mettre a jour l'affichage
+    pygame.display.flip()
+
+
+    for event in pygame.event.get():
+        #fermeture de fenetre
+        if event.type == pygame.QUIT:
+            running = False
+            pygame.quit()
             
-            self.screen.blit(self.background, (0, 0))
-            self.grille.draw()
-            self.draw_ui()
-            pygame.display.flip()
-    
-    def draw_ui(self):
-        # Dessiner un rectangle en haut de l'écran pour l'interface utilisateur
-        ui_rect = pygame.Rect(0, 0, self.screen.get_width(), self.hauteur)
-        pygame.draw.rect(self.screen, (0, 0, 0), ui_rect)  # Remplir l'UI avec une couleur noire
-        # Ajouter ici le dessin des éléments UI comme les soleils, les plantes, etc.
-        font = pygame.font.SysFont(None, 36)
-        text = font.render('Roubles: 100', True, (255, 255, 255))
-        self.screen.blit(text, (10, 10))
+        #Detecter si un joueur lache une touche du clavier
+        elif event.type == pygame.KEYDOWN:
+            game.pressed[event.key] = True
 
+            if event.key == pygame.K_SPACE:
+                game.player.launch_projectile()
 
-if __name__ == '__main__':
-    pygame.init()
-    Game().main_function()
-    pygame.quit()
-    
+        elif event.type == pygame.KEYUP:
+            game.pressed[event.key] = False
+      
+
